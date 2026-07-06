@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from lib import analyze, state as state_lib
+from lib import analyze, slack_notify, state as state_lib
 from lib.auth import require_exec
 from lib.budget import current_monthly, top_users
 from lib.index import list_docs
@@ -75,7 +75,13 @@ with tabs[1]:
     cols_ann = st.columns([1, 1, 4])
     if cols_ann[0].button("Pin announcement", type="primary"):
         state_lib.set_announcement(text)
-        st.success("Pinned.")
+        posted, slack_error = slack_notify.post_announcement(text)
+        if posted:
+            st.success("Pinned and posted to #announcements.")
+        elif slack_error:
+            st.warning(f"Pinned, but Slack post failed: {slack_error}")
+        else:
+            st.success("Pinned.")
         st.rerun()
     if cols_ann[1].button("Clear"):
         state_lib.set_announcement(None)
